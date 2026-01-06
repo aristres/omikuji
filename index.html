@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>おみくじ - 運勢占い</title>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;700;900&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --red: #c82333;
+            --gold: #d4af37;
+            --cream: #faf8f3;
+            --black: #1a1a1a;
+            --shadow: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Noto Serif JP', serif;
+            background: linear-gradient(135deg, #1a0000 0%, #4a0000 50%, #1a0000 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(200, 35, 51, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .sakura {
+            position: fixed;
+            width: 15px;
+            height: 15px;
+            background: radial-gradient(circle at 30% 30%, #ffc0cb, #ffb6c1);
+            border-radius: 50% 0 50% 0;
+            opacity: 0.6;
+            animation: fall linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .shrine-box {
+            background: var(--cream);
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            position: relative;
+            border: 3px solid var(--gold);
+        }
+
+        .shrine-box::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 30px;
+            background: var(--red);
+            border-radius: 50%;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .title {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 48px;
+            font-weight: 900;
+            text-align: center;
+            color: var(--red);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px var(--shadow);
+            letter-spacing: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--black);
+            margin-bottom: 40px;
+            font-size: 14px;
+            opacity: 0.7;
+            letter-spacing: 2px;
+        }
+
+        .omikuji-box {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .omikuji-box:hover {
+            transform: scale(1.05);
+        }
+
+        .box-image {
+            width: 200px;
+            height: 280px;
+            margin: 0 auto 30px;
+            background: linear-gradient(180deg, #8b0000 0%, #b22222 50%, #8b0000 100%);
+            border-radius: 15px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.4),
+                inset 0 -5px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .box-image::before {
+            content: '籤';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 80px;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .box-image::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 8px;
+            background: var(--gold);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .draw-button {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--red) 0%, #a01f2a 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(200, 35, 51, 0.4);
+            letter-spacing: 4px;
+        }
+
+        .draw-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(200, 35, 51, 0.6);
+        }
+
+        .draw-button:active {
+            transform: translateY(0);
+        }
+
+        .draw-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            display: none;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fortune-rank {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 56px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+            text-shadow: 2px 2px 4px var(--shadow);
+        }
+
+        .fortune-rank.great { color: #ff1744; }
+        .fortune-rank.good { color: #ff6f00; }
+        .fortune-rank.middle { color: #ffd600; }
+        .fortune-rank.small { color: #64b5f6; }
+        .fortune-rank.bad { color: #757575; }
+
+        .fortune-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px var(--shadow);
+            border-left: 4px solid var(--gold);
+        }
+
+        .fortune-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .fortune-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .fortune-label {
+            font-weight: 700;
+            color: var(--red);
+            margin-bottom: 5px;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .fortune-text {
+            color: var(--black);
+            line-height: 1.8;
+            font-size: 15px;
+        }
+
+        .message {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(200, 35, 51, 0.1));
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-style: italic;
+            color: var(--black);
+            line-height: 1.8;
+            margin-bottom: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        @media (max-width: 600px) {
+            .shrine-box {
+                padding: 40px 25px;
+            }
+            
+            .title {
+                font-size: 36px;
+                letter-spacing: 6px;
+            }
+            
+            .fortune-rank {
+                font-size: 42px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="shrine-box">
+            <h1 class="title">おみくじ</h1>
+            <p class="subtitle">あなたの運勢を占います</p>
+            
+            <div id="drawSection">
+                <div class="omikuji-box" id="omikujiBox">
+                    <div class="box-image"></div>
+                </div>
+                <button class="draw-button" id="drawButton">おみくじを引く</button>
+            </div>
+
+            <div class="result-container" id="resultContainer">
+                <div class="fortune-rank" id="fortuneRank"></div>
+                <div class="message" id="message"></div>
+                <div class="fortune-content">
+                    <div class="fortune-item">
+                        <div class="fortune-label">願望</div>
+                        <div class="fortune-text" id="wish"></div>
+                    </div>
+                    <div class="fortune-item">
+                        <div class="fortune-label">健康</div>
+                        <div class="fortune-text" id="health"></div>
+                    </div>
+                    <div class="fortune-item">
+                        <div class="fortune-label">恋愛</div>
+                        <div class="fortune-text" id="love"></div>
+                    </div>
+                    <div class="fortune-item">
+                        <div class="fortune-label">金運</div>
+                        <div class="fortune-text" id="money"></div>
+                    </div>
+                    <div class="fortune-item">
+                        <div class="fortune-label">仕事</div>
+                        <div class="fortune-text" id="work"></div>
+                    </div>
+                </div>
+                <button class="draw-button" id="redrawButton">もう一度引く</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 桜の花びらを生成
+        function createSakura() {
+            const sakura = document.createElement('div');
+            sakura.className = 'sakura';
+            sakura.style.left = Math.random() * 100 + 'vw';
+            sakura.style.animationDuration = (Math.random() * 3 + 5) + 's';
+            sakura.style.animationDelay = Math.random() * 5 + 's';
+            document.body.appendChild(sakura);
+            
+            setTimeout(() => sakura.remove(), 10000);
+        }
+
+        // 定期的に桜を生成
+        setInterval(createSakura, 800);
+
+        const fortunes = [
+            {
+                rank: '大吉',
+                rankClass: 'great',
+                message: '最高の運気です。何事も順調に進むでしょう。',
+                wish: '叶います。自信を持って行動しましょう。',
+                health: '絶好調です。活力に満ち溢れています。',
+                love: '素晴らしい出会いがあるでしょう。',
+                money: '思わぬ収入があるかもしれません。',
+                work: '大きな成果を上げられます。'
+            },
+            {
+                rank: '吉',
+                rankClass: 'good',
+                message: '良い運気に恵まれています。前向きに進みましょう。',
+                wish: '努力次第で叶うでしょう。',
+                health: '良好です。規則正しい生活を心がけて。',
+                love: '良いご縁があります。積極的に。',
+                money: '堅実に管理すれば安定します。',
+                work: '着実に成果が出るでしょう。'
+            },
+            {
+                rank: '中吉',
+                rankClass: 'middle',
+                message: '平穏な運気です。焦らず着実に進みましょう。',
+                wish: '時間はかかりますが叶います。',
+                health: 'まずまずです。休養も大切に。',
+                love: 'ゆっくりと深まっていきます。',
+                money: '無駄遣いに注意しましょう。',
+                work: 'コツコツと努力を続けて。'
+            },
+            {
+                rank: '小吉',
+                rankClass: 'small',
+                message: 'ささやかな幸せが訪れます。小さな喜びを大切に。',
+                wish: '焦らず待ちましょう。',
+                health: '油断せず健康管理を。',
+                love: '友達から始まるかも。',
+                money: '節約を心がけて。',
+                work: '地道な努力が必要です。'
+            },
+            {
+                rank: '末吉',
+                rankClass: 'small',
+                message: 'これから運気が上昇していきます。辛抱強く。',
+                wish: 'もう少し時間が必要です。',
+                health: '無理は禁物。休息を。',
+                love: 'じっくりと関係を築いて。',
+                money: '慎重に管理しましょう。',
+                work: '基礎を固める時期です。'
+            },
+            {
+                rank: '凶',
+                rankClass: 'bad',
+                message: '今は試練の時。慎重に行動し、次のチャンスを待ちましょう。',
+                wish: '今は待つ時です。焦らずに。',
+                health: '体調管理に気をつけて。',
+                love: '焦りは禁物。時を待って。',
+                money: '出費を控えめに。',
+                work: '謙虚な姿勢を忘れずに。'
+            }
+        ];
+
+        const drawButton = document.getElementById('drawButton');
+        const redrawButton = document.getElementById('redrawButton');
+        const omikujiBox = document.getElementById('omikujiBox');
+        const drawSection = document.getElementById('drawSection');
+        const resultContainer = document.getElementById('resultContainer');
+
+        function drawOmikuji() {
+            drawButton.disabled = true;
+            omikujiBox.classList.add('shake');
+
+            setTimeout(() => {
+                omikujiBox.classList.remove('shake');
+                
+                const fortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+                
+                document.getElementById('fortuneRank').textContent = fortune.rank;
+                document.getElementById('fortuneRank').className = 'fortune-rank ' + fortune.rankClass;
+                document.getElementById('message').textContent = fortune.message;
+                document.getElementById('wish').textContent = fortune.wish;
+                document.getElementById('health').textContent = fortune.health;
+                document.getElementById('love').textContent = fortune.love;
+                document.getElementById('money').textContent = fortune.money;
+                document.getElementById('work').textContent = fortune.work;
+
+                drawSection.style.display = 'none';
+                resultContainer.classList.add('show');
+            }, 500);
+        }
+
+        function reset() {
+            resultContainer.classList.remove('show');
+            setTimeout(() => {
+                drawSection.style.display = 'block';
+                drawButton.disabled = false;
+            }, 300);
+        }
+
+        drawButton.addEventListener('click', drawOmikuji);
+        redrawButton.addEventListener('click', reset);
+        omikujiBox.addEventListener('click', () => {
+            if (!drawButton.disabled) {
+                drawOmikuji();
+            }
+        });
+    </script>
+</body>
+</html>
