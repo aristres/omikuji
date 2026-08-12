@@ -51,4 +51,8 @@ struct PlayIdea: Identifiable, Codable, Hashable {
     let parentEnergy: Int
     let materials: String
     let parentRole: String
+
+    var ageLabel: String {
+        minAge == maxAge ? "\(minAge)歳" : "\(minAge)〜\(maxAge)歳"
+    }
 }

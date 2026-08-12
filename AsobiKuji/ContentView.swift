@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var age = 5
+    @State private var age = 1
     @State private var place: PlayPlace = .indoor
     @State private var duration: PlayDuration = .ten
     @State private var energy: ParentEnergy = .tired
@@ -12,6 +12,8 @@ struct ContentView: View {
     private var favoriteIDs: Set<String> {
         Set(favoritePlayIDs.split(separator: ",").map(String.init))
     }
+
+    private var isInfant: Bool { age <= 2 }
 
     var body: some View {
         NavigationStack {
@@ -55,10 +57,10 @@ struct ContentView: View {
         VStack(spacing: 8) {
             Image(systemName: "sparkles")
                 .font(.system(size: 42))
-            Text("考えなくていい。今日の遊びはくじにおまかせ。")
+            Text(isInfant ? "ことばはいらない。今日のふれあいを見つけよう。" : "考えなくていい。今日の遊びはくじにおまかせ。")
                 .font(.headline)
                 .multilineTextAlignment(.center)
-            Text("いまの状況を選ぶだけで、すぐできる遊びを1つ出します。")
+            Text(isInfant ? "言葉やルールがなくても楽しめる、今日のふれあいを1つ出します。" : "いまの状況を選ぶだけで、すぐできる遊びを1つ出します。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -70,12 +72,20 @@ struct ContentView: View {
         VStack(spacing: 18) {
             filterRow(title: "子どもの年齢") {
                 Picker("年齢", selection: $age) {
-                    ForEach(1...10, id: \.self) { value in
+                    ForEach(0...10, id: \.self) { value in
                         Text("\(value)歳").tag(value)
                     }
                 }
                 .pickerStyle(.menu)
             }
+
+            HStack(spacing: 6) {
+                Image(systemName: isInfant ? "figure.and.child.holdinghands" : "figure.play")
+                Text(isInfant ? "乳児向け：ふれあいを提案" : "3歳以上：条件に合う遊びを提案")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             filterRow(title: "場所") {
                 Picker("場所", selection: $place) {
@@ -86,7 +96,7 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
             }
 
-            filterRow(title: "遊べる時間") {
+            filterRow(title: isInfant ? "ふれあう時間" : "遊べる時間") {
                 Picker("時間", selection: $duration) {
                     ForEach(PlayDuration.allCases) { item in
                         Text(item.rawValue).tag(item)
@@ -120,7 +130,7 @@ struct ContentView: View {
 
     private var drawButton: some View {
         Button(action: drawIdea) {
-            Label("今日の遊びを引く", systemImage: "dice.fill")
+            Label(isInfant ? "今日のふれあいを選ぶ" : "今日の遊びを引く", systemImage: isInfant ? "heart.circle.fill" : "dice.fill")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
@@ -134,7 +144,7 @@ struct ContentView: View {
             Image(systemName: "hand.tap")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
-            Text("条件を選んで、くじを引いてください")
+            Text(isInfant ? "条件を選んで、ふれあいを見つけてください" : "条件を選んで、くじを引いてください")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -147,7 +157,7 @@ struct ContentView: View {
             Image(systemName: "magnifyingglass")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
-            Text("この条件に合う遊びはありませんでした")
+            Text(isInfant ? "この条件に合うふれあいはありませんでした" : "この条件に合う遊びはありませんでした")
                 .font(.headline)
                 .multilineTextAlignment(.center)
             Text("時間や親の元気度を変えて、もう一度引いてみてください。")
@@ -166,7 +176,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("今日の遊び")
+                    Text(isInfant ? "今日のふれあい" : "今日の遊び")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Text(idea.title)
@@ -189,8 +199,14 @@ struct ContentView: View {
             Label("親の役割：\(idea.parentRole)", systemImage: "person.crop.circle")
             Label("目安：\(idea.minutes)分", systemImage: "clock")
 
+            if isInfant {
+                Label("反応や発達に合わせ、嫌がったら休みましょう", systemImage: "checkmark.shield")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Button(action: drawIdea) {
-                Label("もう一回", systemImage: "arrow.triangle.2.circlepath")
+                Label(isInfant ? "ほかのふれあい" : "もう一回", systemImage: "arrow.triangle.2.circlepath")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -280,7 +296,7 @@ private struct FavoritesView: View {
                 Text(idea.title)
                     .font(.headline)
                 Spacer()
-                Text("\(idea.minAge)〜\(idea.maxAge)歳")
+                Text(idea.ageLabel)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
