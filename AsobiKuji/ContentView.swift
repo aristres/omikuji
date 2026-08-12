@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var duration: PlayDuration = .ten
     @State private var energy: ParentEnergy = .tired
     @State private var currentIdea: PlayIdea?
+    @State private var didTryDrawing = false
     @AppStorage("favoritePlayIDs") private var favoritePlayIDs = ""
 
     private var favoriteIDs: Set<String> {
@@ -21,6 +22,8 @@ struct ContentView: View {
                     drawButton
                     if let idea = currentIdea {
                         resultCard(idea)
+                    } else if didTryDrawing {
+                        noMatchCard
                     } else {
                         emptyCard
                     }
@@ -30,6 +33,21 @@ struct ContentView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("あそびくじ")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        FavoritesView()
+                    } label: {
+                        Image(systemName: favoriteIDs.isEmpty ? "heart" : "heart.fill")
+                    }
+                    .accessibilityLabel("お気に入り一覧")
+                    .accessibilityValue("\(favoriteIDs.count)件")
+                }
+            }
+            .onChange(of: age) { resetResult() }
+            .onChange(of: place) { resetResult() }
+            .onChange(of: duration) { resetResult() }
+            .onChange(of: energy) { resetResult() }
         }
     }
 
@@ -124,6 +142,26 @@ struct ContentView: View {
         .padding(.vertical, 38)
     }
 
+    private var noMatchCard: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("この条件に合う遊びはありませんでした")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+            Text("時間や親の元気度を変えて、もう一度引いてみてください。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .padding(.horizontal)
+        .background(.background)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
     private func resultCard(_ idea: PlayIdea) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
@@ -139,7 +177,7 @@ struct ContentView: View {
                     Image(systemName: favoriteIDs.contains(idea.id) ? "heart.fill" : "heart")
                         .font(.title2)
                 }
-                .accessibilityLabel("お気に入り")
+                .accessibilityLabel(favoriteIDs.contains(idea.id) ? "お気に入りから削除" : "お気に入りに追加")
             }
 
             Text(idea.description)
@@ -171,13 +209,14 @@ struct ContentView: View {
             $0.parentEnergy <= energy.level
         }
 
-        let relaxed = PlayCatalog.ideas.filter {
-            $0.minAge <= age && $0.maxAge >= age && $0.place == place
-        }
+        didTryDrawing = true
+        let alternatives = matches.filter { $0.id != currentIdea?.id }
+        currentIdea = (alternatives.isEmpty ? matches : alternatives).randomElement()
+    }
 
-        let pool = matches.isEmpty ? relaxed : matches
-        let alternatives = pool.filter { $0.id != currentIdea?.id }
-        currentIdea = (alternatives.isEmpty ? pool : alternatives).randomElement()
+    private func resetResult() {
+        currentIdea = nil
+        didTryDrawing = false
     }
 
     private func toggleFavorite(_ id: String) {
@@ -191,6 +230,90 @@ struct ContentView: View {
     }
 }
 
+private struct FavoritesView: View {
+    @AppStorage("favoritePlayIDs") private var favoritePlayIDs = ""
+
+    private var favoriteIDs: Set<String> {
+        Set(favoritePlayIDs.split(separator: ",").map(String.init))
+    }
+
+    private var favoriteIdeas: [PlayIdea] {
+        PlayCatalog.ideas
+            .filter { favoriteIDs.contains($0.id) }
+            .sorted {
+                if $0.title == $1.title {
+                    return $0.minAge < $1.minAge
+                }
+                return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+            }
+    }
+
+    var body: some View {
+        Group {
+            if favoriteIdeas.isEmpty {
+                ContentUnavailableView(
+                    "お気に入りはまだありません",
+                    systemImage: "heart",
+                    description: Text("くじの結果にあるハートを押すと、ここでいつでも確認できます。")
+                )
+            } else {
+                List(favoriteIdeas) { idea in
+                    favoriteRow(idea)
+                        .swipeActions {
+                            Button(role: .destructive) {
+                                removeFavorite(idea.id)
+                            } label: {
+                                Label("削除", systemImage: "trash")
+                            }
+                        }
+                }
+                .listStyle(.insetGrouped)
+            }
+        }
+        .navigationTitle("お気に入り")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func favoriteRow(_ idea: PlayIdea) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(idea.title)
+                    .font(.headline)
+                Spacer()
+                Text("\(idea.minAge)〜\(idea.maxAge)歳")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(idea.description)
+                .font(.subheadline)
+
+            HStack(spacing: 12) {
+                Label(idea.place.rawValue, systemImage: idea.place == .indoor ? "house" : "figure.walk")
+                Label("\(idea.minutes)分", systemImage: "clock")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            Label("必要なもの：\(idea.materials)", systemImage: "shippingbox")
+                .font(.caption)
+        }
+        .padding(.vertical, 6)
+    }
+
+    private func removeFavorite(_ id: String) {
+        var ids = favoriteIDs
+        ids.remove(id)
+        favoritePlayIDs = ids.sorted().joined(separator: ",")
+    }
+}
+
 #Preview {
     ContentView()
+}
+
+#Preview("お気に入り") {
+    NavigationStack {
+        FavoritesView()
+    }
 }
